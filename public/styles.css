@@ -95,7 +95,8 @@ body {
   overflow-y: auto;
   overflow-x: hidden;
   scroll-snap-type: y proximity;
-  display: block;
+  display: flex;
+  flex-direction: column;
   padding: 8px 0;
   margin-top: 2px;
   border-top: 1px solid #dbe3ee;
@@ -254,15 +255,12 @@ body {
 
 @media (min-width: 980px) {
   .widget__posts {
-    column-count: 2;
-    column-gap: 12px;
-    column-fill: auto;
+    display: flex;
+    flex-direction: column;
   }
 
   .post {
-    display: inline-block;
+    display: block;
     width: 100%;
-    break-inside: avoid;
-    page-break-inside: avoid;
   }
 }
