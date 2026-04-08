@@ -91,10 +91,10 @@ body {
 }
 
 .widget__posts {
-  height: 470px;
+  height: 560px;
   overflow-y: auto;
   overflow-x: hidden;
-  scroll-snap-type: y proximity;
+  scroll-snap-type: none;
   display: grid;
   grid-template-columns: 1fr;
   padding: 8px 0;
@@ -113,7 +113,6 @@ body {
   border-radius: 14px;
   padding: 14px;
   background: #fcfcfd;
-  scroll-snap-align: start;
   overflow: hidden;
   height: auto;
   margin: 0;
@@ -246,7 +245,7 @@ body {
   }
 
   .widget__posts {
-    height: 420px;
+    height: 460px;
     padding: 6px 0;
   }
 
@@ -261,7 +260,7 @@ body {
   }
 }
 
-@media (min-width: 760px) {
+@media (min-width: 900px) {
   .widget__posts {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
