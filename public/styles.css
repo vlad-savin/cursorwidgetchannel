@@ -94,8 +94,7 @@ body {
   height: 470px;
   overflow-y: auto;
   scroll-snap-type: y proximity;
-  display: grid;
-  grid-template-columns: 1fr;
+  display: block;
   gap: 12px;
   padding: 8px 0;
   margin-top: 2px;
@@ -108,7 +107,7 @@ body {
   padding: 14px;
   background: #fcfcfd;
   scroll-snap-align: start;
-  flex: 0 0 auto;
+  margin-bottom: 12px;
 }
 
 .post__media {
@@ -238,7 +237,6 @@ body {
   .widget__posts {
     height: 420px;
     padding: 6px 0;
-    grid-template-columns: 1fr;
   }
 
   .widget__header {
@@ -254,7 +252,14 @@ body {
 
 @media (min-width: 980px) {
   .widget__posts {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    align-content: start;
+    column-count: 2;
+    column-gap: 12px;
+  }
+
+  .post {
+    display: inline-block;
+    width: 100%;
+    break-inside: avoid;
+    page-break-inside: avoid;
   }
 }
