@@ -95,10 +95,15 @@ body {
   overflow-y: auto;
   overflow-x: hidden;
   scroll-snap-type: y proximity;
-  display: block;
+  display: flex;
+  flex-direction: column;
   padding: 8px 0;
   margin-top: 2px;
   border-top: 1px solid #dbe3ee;
+}
+
+.widget__posts--bottom {
+  justify-content: flex-end;
 }
 
 .post {
@@ -110,6 +115,7 @@ body {
   overflow: hidden;
   height: auto;
   margin: 0 0 12px;
+  flex: 0 0 auto;
 }
 
 .post__media {

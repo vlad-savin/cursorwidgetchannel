@@ -131,6 +131,8 @@ function renderPosts(posts) {
 
   // Telegram-like behavior: newest post is at the bottom.
   const scrollToLatest = () => {
+    const hasOverflow = postsContainer.scrollHeight > postsContainer.clientHeight + 1;
+    postsContainer.classList.toggle("widget__posts--bottom", !hasOverflow);
     postsContainer.scrollTop = postsContainer.scrollHeight;
   };
 
