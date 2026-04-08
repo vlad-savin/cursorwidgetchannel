@@ -11,7 +11,7 @@ const poweredEl = document.getElementById("widget-powered");
 function getConfigFromUrl() {
   const params = new URLSearchParams(window.location.search);
   const channel = (params.get("channel") || DEFAULT_CHANNEL).replace("@", "").trim();
-  const planRaw = (params.get("plan") || "free").toLowerCase();
+  const planRaw = (params.get("plan") || "paid").toLowerCase();
   const plan = planRaw === "paid" ? "paid" : "free";
   const siteUrl = (params.get("siteUrl") || DEFAULT_SITE_URL).trim();
   const siteName = (params.get("siteName") || DEFAULT_SITE_NAME).trim();
