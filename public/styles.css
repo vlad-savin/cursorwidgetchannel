@@ -95,15 +95,17 @@ body {
   overflow-y: auto;
   overflow-x: hidden;
   scroll-snap-type: y proximity;
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
   padding: 8px 0;
   margin-top: 2px;
   border-top: 1px solid #dbe3ee;
+  gap: 12px;
+  align-content: start;
 }
 
 .widget__posts--bottom {
-  justify-content: flex-end;
+  align-content: end;
 }
 
 .post {
@@ -114,7 +116,7 @@ body {
   scroll-snap-align: start;
   overflow: hidden;
   height: auto;
-  margin: 0 0 12px;
+  margin: 0;
   flex: 0 0 auto;
 }
 
