@@ -253,17 +253,3 @@ body {
   }
 }
 
-@media (min-width: 980px) {
-  .widget__posts {
-    column-count: 2;
-    column-gap: 12px;
-    column-fill: auto;
-  }
-
-  .post {
-    display: inline-block;
-    width: 100%;
-    break-inside: avoid;
-    page-break-inside: avoid;
-  }
-}
