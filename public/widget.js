@@ -86,8 +86,10 @@ function renderPosts(posts) {
   }
 
   const orderedPosts = [...posts].sort((a, b) => (a.id || 0) - (b.id || 0));
+  const isTwoColumn = window.matchMedia("(min-width: 980px)").matches;
+  const visiblePosts = isTwoColumn && orderedPosts.length % 2 !== 0 ? orderedPosts.slice(1) : orderedPosts;
 
-  postsContainer.innerHTML = orderedPosts
+  postsContainer.innerHTML = visiblePosts
     .map(
       (post) => `
       <article class="post">
@@ -115,10 +117,14 @@ function renderPosts(posts) {
     )
     .join("");
 
-  // Telegram-like behavior: newest post is at the bottom.
-  requestAnimationFrame(() => {
-    postsContainer.scrollTop = postsContainer.scrollHeight;
-  });
+  // In one-column mode keep Telegram-like behavior: newest post is at the bottom.
+  if (!isTwoColumn) {
+    requestAnimationFrame(() => {
+      postsContainer.scrollTop = postsContainer.scrollHeight;
+    });
+  } else {
+    postsContainer.scrollTop = 0;
+  }
 }
 
 function renderPowered(config) {
