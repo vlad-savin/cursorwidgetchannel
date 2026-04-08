@@ -96,7 +96,7 @@ body {
   overflow-x: hidden;
   scroll-snap-type: y proximity;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  grid-template-columns: 1fr;
   padding: 8px 0;
   margin-top: 2px;
   border-top: 1px solid #dbe3ee;
@@ -258,6 +258,12 @@ body {
   .widget__button--bottom {
     width: 100%;
     justify-content: center;
+  }
+}
+
+@media (min-width: 760px) {
+  .widget__posts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
