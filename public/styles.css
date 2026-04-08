@@ -254,6 +254,7 @@ body {
   .widget__posts {
     column-count: 2;
     column-gap: 12px;
+    column-fill: auto;
   }
 
   .post {
