@@ -95,11 +95,13 @@ body {
   overflow-y: auto;
   overflow-x: hidden;
   scroll-snap-type: y proximity;
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: 1fr;
   padding: 8px 0;
   margin-top: 2px;
   border-top: 1px solid #dbe3ee;
+  gap: 12px;
+  align-content: start;
 }
 
 .post {
@@ -108,9 +110,9 @@ body {
   padding: 14px;
   background: #fcfcfd;
   scroll-snap-align: start;
-  margin-bottom: 12px;
   overflow: hidden;
   height: auto;
+  margin: 0;
 }
 
 .post__media {
@@ -256,12 +258,12 @@ body {
 
 @media (min-width: 980px) {
   .widget__posts {
-    display: flex;
-    flex-direction: column;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-auto-rows: 8px;
+    grid-auto-flow: dense;
   }
 
   .post {
-    display: block;
     width: 100%;
   }
 }
