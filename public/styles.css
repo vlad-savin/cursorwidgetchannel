@@ -7,7 +7,7 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
   background: transparent;
   color: #1f2937;
-  padding: 8px;
+  padding: 0;
   display: flex;
   justify-content: center;
   align-items: flex-start;
@@ -58,8 +58,8 @@ body {
   align-items: center;
   padding: 7px 12px;
   border-radius: 999px;
-  background: #e6f4ff;
-  color: #0f4f79;
+  background: #e8f1e8;
+  color: #4f6b4d;
   font-weight: 700;
 }
 
@@ -85,7 +85,7 @@ body {
 }
 
 .widget__powered a {
-  color: #2563eb;
+  color: #4f6b4d;
   text-decoration: none;
   font-weight: 600;
 }
@@ -147,7 +147,7 @@ body {
 }
 
 .post__text a {
-  color: #2563eb;
+  color: #4f6b4d;
 }
 
 .post__text pre {
@@ -196,7 +196,7 @@ body {
 }
 
 .post__link {
-  color: #2563eb;
+  color: #4f6b4d;
   text-decoration: none;
   font-weight: 500;
 }
