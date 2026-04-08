@@ -94,8 +94,8 @@ body {
   height: 470px;
   overflow-y: auto;
   scroll-snap-type: y proximity;
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: 1fr;
   gap: 12px;
   padding: 8px 0;
   margin-top: 2px;
@@ -226,6 +226,7 @@ body {
   .widget__posts {
     height: 420px;
     padding: 6px 0;
+    grid-template-columns: 1fr;
   }
 
   .widget__header {
@@ -236,5 +237,12 @@ body {
   .widget__button--bottom {
     width: 100%;
     justify-content: center;
+  }
+}
+
+@media (min-width: 980px) {
+  .widget__posts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-content: start;
   }
 }
