@@ -8,11 +8,14 @@ body {
   background: transparent;
   color: #1f2937;
   padding: 8px;
+  display: flex;
+  justify-content: center;
 }
 
 .widget {
+  width: min(100%, 900px);
   max-width: 900px;
-  margin: 0 auto;
+  margin: 0;
   background: #f3f5f8;
   border-radius: 16px;
   border: 1px solid #d8dee8;
