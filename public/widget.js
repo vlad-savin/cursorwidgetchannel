@@ -96,22 +96,10 @@ function renderPosts(posts) {
     return;
   }
 
-  const freshWindowMs = 14 * 24 * 60 * 60 * 1000;
-  const threshold = Date.now() - freshWindowMs;
-  const freshPosts = posts.filter((post) => {
-    if (!post.date) return false;
-    const ts = new Date(post.date).getTime();
-    return !Number.isNaN(ts) && ts >= threshold;
-  });
-
-  const orderedPosts = [...freshPosts]
+  const orderedPosts = [...posts]
     .sort((a, b) => (b.id || 0) - (a.id || 0))
-    .slice(0, 5);
-
-  if (!orderedPosts.length) {
-    postsContainer.innerHTML = '<div class="error">Свежих постов пока нет.</div>';
-    return;
-  }
+    .slice(0, 5)
+    .sort((a, b) => (a.id || 0) - (b.id || 0));
 
   postsContainer.innerHTML = orderedPosts
     .map(
@@ -144,11 +132,11 @@ function renderPosts(posts) {
     )
     .join("");
 
-  // Show newest first and keep list start stable.
+  // Telegram-like behavior: newest post is at the bottom.
   const scrollToLatest = () => {
     const hasOverflow = postsContainer.scrollHeight > postsContainer.clientHeight + 1;
     postsContainer.classList.toggle("widget__posts--bottom", !hasOverflow);
-    postsContainer.scrollTop = 0;
+    postsContainer.scrollTop = postsContainer.scrollHeight;
   };
 
   requestAnimationFrame(scrollToLatest);
