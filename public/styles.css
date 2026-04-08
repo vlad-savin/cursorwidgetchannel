@@ -91,21 +91,19 @@ body {
 }
 
 .widget__posts {
-  height: 560px;
+  height: 470px;
   overflow-y: auto;
   overflow-x: hidden;
-  scroll-snap-type: none;
-  display: grid;
-  grid-template-columns: 1fr;
+  scroll-snap-type: y proximity;
+  display: flex;
+  flex-direction: column;
   padding: 8px 0;
   margin-top: 2px;
   border-top: 1px solid #dbe3ee;
-  gap: 12px;
-  align-content: start;
 }
 
 .widget__posts--bottom {
-  align-content: end;
+  justify-content: flex-end;
 }
 
 .post {
@@ -113,9 +111,10 @@ body {
   border-radius: 14px;
   padding: 14px;
   background: #fcfcfd;
+  scroll-snap-align: start;
   overflow: hidden;
   height: auto;
-  margin: 0;
+  margin: 0 0 12px;
   flex: 0 0 auto;
 }
 
@@ -245,7 +244,7 @@ body {
   }
 
   .widget__posts {
-    height: 460px;
+    height: 420px;
     padding: 6px 0;
   }
 
@@ -260,9 +259,4 @@ body {
   }
 }
 
-@media (min-width: 900px) {
-  .widget__posts {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
 
