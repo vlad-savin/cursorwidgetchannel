@@ -201,6 +201,18 @@ body {
   font-weight: 500;
 }
 
+.post__meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.post__date {
+  color: #6b7280;
+  font-size: 12px;
+  text-transform: lowercase;
+}
+
 .error {
   color: #b91c1c;
   background: #fee2e2;

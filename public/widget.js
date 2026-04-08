@@ -22,6 +22,17 @@ function formatNumber(value) {
   return new Intl.NumberFormat("ru-RU").format(value || 0);
 }
 
+function formatPostDate(dateValue) {
+  if (!dateValue) return "";
+  const parsed = new Date(dateValue);
+  if (Number.isNaN(parsed.getTime())) return "";
+
+  return new Intl.DateTimeFormat("ru-RU", {
+    day: "2-digit",
+    month: "short"
+  }).format(parsed);
+}
+
 function escapeHtml(value) {
   return (value || "")
     .replaceAll("&", "&amp;")
@@ -110,7 +121,10 @@ function renderPosts(posts) {
               ${formatNumber(post.views)}
             </span>
           </div>
-          <a class="post__link" href="${post.url}" target="_blank" rel="noreferrer">Пост</a>
+          <div class="post__meta">
+            <span class="post__date">${formatPostDate(post.date)}</span>
+            <a class="post__link" href="${post.url}" target="_blank" rel="noreferrer">Пост</a>
+          </div>
         </div>
       </article>
     `
