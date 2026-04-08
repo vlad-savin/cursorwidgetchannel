@@ -7,7 +7,6 @@ const subsEl = document.getElementById("channel-subscribers");
 const linkEl = document.getElementById("channel-link");
 const postsContainer = document.getElementById("posts-container");
 const poweredEl = document.getElementById("widget-powered");
-const twoColumnMediaQuery = window.matchMedia("(min-width: 980px)");
 
 function getConfigFromUrl() {
   const params = new URLSearchParams(window.location.search);
@@ -91,25 +90,6 @@ function renderText(text, textHtml) {
   return `<div class="post__text">${safeText}</div>`;
 }
 
-function applyMasonryLayout() {
-  const posts = postsContainer.querySelectorAll(".post");
-  if (!posts.length) return;
-
-  if (!twoColumnMediaQuery.matches) {
-    for (const post of posts) {
-      post.style.gridRowEnd = "";
-    }
-    return;
-  }
-
-  const rowSize = 8;
-  const gap = 12;
-  for (const post of posts) {
-    const span = Math.max(1, Math.ceil((post.offsetHeight + gap) / (rowSize + gap)));
-    post.style.gridRowEnd = `span ${span}`;
-  }
-}
-
 function renderPosts(posts) {
   if (!posts.length) {
     postsContainer.innerHTML = '<div class="error">Посты не найдены.</div>';
@@ -154,14 +134,8 @@ function renderPosts(posts) {
     postsContainer.scrollTop = postsContainer.scrollHeight;
   };
 
-  requestAnimationFrame(() => {
-    applyMasonryLayout();
-    scrollToLatest();
-  });
-  setTimeout(() => {
-    applyMasonryLayout();
-    scrollToLatest();
-  }, 300);
+  requestAnimationFrame(scrollToLatest);
+  setTimeout(scrollToLatest, 300);
 }
 
 function renderPowered(config) {
@@ -191,9 +165,6 @@ async function init() {
     renderPosts(data.posts || []);
     renderPowered(config);
 
-    window.addEventListener("resize", () => {
-      applyMasonryLayout();
-    });
   } catch (error) {
     postsContainer.innerHTML = '<div class="error">Ошибка загрузки данных канала.</div>';
   }
