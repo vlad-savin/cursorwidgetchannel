@@ -230,7 +230,7 @@ async function fetchChannelData(channel) {
     title,
     subscribers,
     channelUrl: `https://t.me/${channel}`,
-    posts: posts.slice(0, 4)
+    posts: posts.slice(0, 6)
   };
 }
 

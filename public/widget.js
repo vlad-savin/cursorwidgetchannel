@@ -130,9 +130,12 @@ function renderPosts(posts) {
     .join("");
 
   // Telegram-like behavior: newest post is at the bottom.
-  requestAnimationFrame(() => {
+  const scrollToLatest = () => {
     postsContainer.scrollTop = postsContainer.scrollHeight;
-  });
+  };
+
+  requestAnimationFrame(scrollToLatest);
+  setTimeout(scrollToLatest, 250);
 }
 
 function renderPowered(config) {

@@ -110,6 +110,7 @@ body {
   scroll-snap-align: start;
   margin-bottom: 12px;
   overflow: hidden;
+  height: auto;
 }
 
 .post__media {
