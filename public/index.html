@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Telegram Channel Widget</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="widget" id="tg-widget">
+      <div class="widget__header">
+        <div>
+          <p class="widget__label">Telegram канал</p>
+          <h1 class="widget__title" id="channel-title">Загрузка...</h1>
+          <p class="widget__meta widget__meta--highlight" id="channel-subscribers">Подписчики: ...</p>
+        </div>
+      </div>
+
+      <div class="widget__posts" id="posts-container"></div>
+      <div id="widget-powered" class="widget__powered" hidden></div>
+      <a id="channel-link" class="widget__button widget__button--bottom" href="#" target="_blank" rel="noreferrer">
+        Открыть канал
+      </a>
+    </div>
+
+    <script src="./widget.js"></script>
+  </body>
+  </html>
