@@ -11,6 +11,8 @@
       <nav class="nav">
         <a href="/site">Главная</a>
         <a href="/pricing">Тарифы</a>
+        <a href="/auth">Войти</a>
+        <a href="/cabinet">Кабинет</a>
       </nav>
 
       <section class="hero">
@@ -45,6 +47,24 @@
         </div>
       </section>
 
+      <section class="card" id="embed-code">
+        <h2>Получить код для сайта</h2>
+        <p class="muted">
+          Выберите формат: бесплатный код с пометкой или платный код без пометки. Канал берется из поля демо.
+        </p>
+
+        <div class="actions">
+          <button class="btn btn--ghost" id="gen-free" type="button">Сгенерировать Free код</button>
+          <button class="btn btn--primary" id="gen-paid" type="button">Сгенерировать Paid код</button>
+        </div>
+
+        <div class="code-wrap">
+          <label class="code-label" for="embed-output">HTML-код для вставки:</label>
+          <textarea id="embed-output" class="code-output" readonly></textarea>
+          <button class="btn btn--primary" id="copy-code" type="button">Скопировать код</button>
+        </div>
+      </section>
+
       <section class="grid grid--2" id="tariffs">
         <article class="card">
           <h2>Free</h2>
@@ -57,11 +77,12 @@
         </article>
         <article class="card">
           <h2>Paid</h2>
-          <p class="price">990 ₽ / месяц</p>
+          <p class="price">300 ₽ / месяц</p>
           <ul>
             <li>Без пометки</li>
             <li>Чистый виджет для коммерческого сайта</li>
             <li>Приоритетная поддержка</li>
+            <li>Годовой тариф со скидкой: 3000 ₽ / год</li>
           </ul>
           <p><a class="btn btn--primary" href="mailto:support@liveproof.online?subject=Оплата%20тарифа%20Paid">Оплатить картой</a></p>
         </article>
@@ -102,6 +123,37 @@
         const form = document.getElementById("demo-form");
         const input = document.getElementById("demo-channel");
         const frame = document.getElementById("demo-frame");
+        const out = document.getElementById("embed-output");
+        const genFree = document.getElementById("gen-free");
+        const genPaid = document.getElementById("gen-paid");
+        const copyCode = document.getElementById("copy-code");
+
+        function getChannel() {
+          return ((input.value || "").trim().replace(/^@/, "")) || "r77_ai";
+        }
+
+        function buildCode(plan) {
+          const channel = getChannel();
+          const src =
+            plan === "paid"
+              ? "https://liveproof.online/?channel=" + encodeURIComponent(channel) + "&plan=paid"
+              : "https://liveproof.online/?channel=" +
+                encodeURIComponent(channel) +
+                "&plan=free&siteName=LiveProof&siteUrl=https://liveproof.online";
+          return (
+            "<iframe\n" +
+            '  src="' + src + '"\n' +
+            '  width="100%"\n' +
+            '  height="740"\n' +
+            '  style="border:0;display:block;"\n' +
+            '  loading="lazy">\n' +
+            "</iframe>"
+          );
+        }
+
+        function renderCode(plan) {
+          out.value = buildCode(plan);
+        }
 
         form.addEventListener("submit", function (event) {
           event.preventDefault();
@@ -112,6 +164,30 @@
             encodeURIComponent(channel) +
             "&plan=free&siteName=LiveProof&siteUrl=https://liveproof.online";
         });
+
+        genFree.addEventListener("click", function () {
+          renderCode("free");
+        });
+
+        genPaid.addEventListener("click", function () {
+          renderCode("paid");
+        });
+
+        copyCode.addEventListener("click", async function () {
+          if (!out.value) renderCode("free");
+          try {
+            await navigator.clipboard.writeText(out.value);
+            copyCode.textContent = "Скопировано";
+            setTimeout(function () {
+              copyCode.textContent = "Скопировать код";
+            }, 1200);
+          } catch (_error) {
+            out.focus();
+            out.select();
+          }
+        });
+
+        renderCode("free");
       })();
     </script>
   </body>

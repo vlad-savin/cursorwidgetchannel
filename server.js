@@ -3,14 +3,113 @@ const cors = require("cors");
 const axios = require("axios");
 const cheerio = require("cheerio");
 const path = require("path");
+const fs = require("fs");
+const crypto = require("crypto");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-
-app.use(cors());
-app.use(express.static("public"));
+const SESSION_COOKIE = "lp_session";
+const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 7;
+const SESSION_SECRET = process.env.SESSION_SECRET || "dev-liveproof-secret";
 
 const publicDir = path.join(__dirname, "public");
+const dataDir = path.join(__dirname, "data");
+const dbPath = path.join(dataDir, "app-db.json");
+
+app.use(cors());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(express.static("public"));
+
+function ensureDb() {
+  if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
+  if (!fs.existsSync(dbPath)) {
+    const initial = { users: [], widgets: [], payments: [] };
+    fs.writeFileSync(dbPath, JSON.stringify(initial, null, 2), "utf8");
+  }
+}
+
+function readDb() {
+  ensureDb();
+  return JSON.parse(fs.readFileSync(dbPath, "utf8"));
+}
+
+function writeDb(data) {
+  fs.writeFileSync(dbPath, JSON.stringify(data, null, 2), "utf8");
+}
+
+function genId() {
+  return crypto.randomBytes(8).toString("hex");
+}
+
+function signValue(value) {
+  const signature = crypto.createHmac("sha256", SESSION_SECRET).update(value).digest("hex");
+  return `${value}.${signature}`;
+}
+
+function verifySignedValue(signed) {
+  if (!signed || !signed.includes(".")) return null;
+  const lastDot = signed.lastIndexOf(".");
+  const value = signed.slice(0, lastDot);
+  const signature = signed.slice(lastDot + 1);
+  const expected = crypto.createHmac("sha256", SESSION_SECRET).update(value).digest("hex");
+  return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected)) ? value : null;
+}
+
+function parseCookies(req) {
+  const header = req.headers.cookie || "";
+  const chunks = header.split(";").map((s) => s.trim()).filter(Boolean);
+  const out = {};
+  for (const chunk of chunks) {
+    const idx = chunk.indexOf("=");
+    if (idx === -1) continue;
+    out[decodeURIComponent(chunk.slice(0, idx))] = decodeURIComponent(chunk.slice(idx + 1));
+  }
+  return out;
+}
+
+function hashPassword(password, salt) {
+  return crypto.scryptSync(password, salt, 64).toString("hex");
+}
+
+function createSession(userId) {
+  const payload = JSON.stringify({ userId, exp: Date.now() + SESSION_TTL_MS });
+  return signValue(Buffer.from(payload).toString("base64url"));
+}
+
+function readSession(req) {
+  const cookies = parseCookies(req);
+  const signed = cookies[SESSION_COOKIE];
+  const raw = verifySignedValue(signed || "");
+  if (!raw) return null;
+  try {
+    const payload = JSON.parse(Buffer.from(raw, "base64url").toString("utf8"));
+    if (!payload.exp || payload.exp < Date.now()) return null;
+    return payload;
+  } catch {
+    return null;
+  }
+}
+
+function clearSession(res) {
+  res.setHeader("Set-Cookie", `${SESSION_COOKIE}=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax`);
+}
+
+function setSession(res, userId) {
+  const token = createSession(userId);
+  const maxAgeSec = Math.floor(SESSION_TTL_MS / 1000);
+  res.setHeader(
+    "Set-Cookie",
+    `${SESSION_COOKIE}=${encodeURIComponent(token)}; Path=/; Max-Age=${maxAgeSec}; HttpOnly; SameSite=Lax`
+  );
+}
+
+function authRequired(req, res, next) {
+  const session = readSession(req);
+  if (!session) return res.status(401).json({ error: "Unauthorized" });
+  req.session = session;
+  return next();
+}
 
 app.get("/site", (_req, res) => {
   res.sendFile(path.join(publicDir, "site.html"));
@@ -30,6 +129,160 @@ app.get("/offer", (_req, res) => {
 
 app.get("/privacy", (_req, res) => {
   res.sendFile(path.join(publicDir, "privacy.html"));
+});
+
+app.get("/auth", (_req, res) => {
+  res.sendFile(path.join(publicDir, "auth.html"));
+});
+
+app.get("/cabinet", (_req, res) => {
+  res.sendFile(path.join(publicDir, "cabinet.html"));
+});
+
+app.post("/api/auth/register", (req, res) => {
+  const email = (req.body.email || "").toString().trim().toLowerCase();
+  const password = (req.body.password || "").toString();
+  if (!email || !password || password.length < 6) {
+    return res.status(400).json({ error: "Введите email и пароль не короче 6 символов" });
+  }
+
+  const db = readDb();
+  if (db.users.some((u) => u.email === email)) {
+    return res.status(409).json({ error: "Пользователь с таким email уже существует" });
+  }
+
+  const salt = crypto.randomBytes(16).toString("hex");
+  const user = {
+    id: genId(),
+    email,
+    salt,
+    passwordHash: hashPassword(password, salt),
+    createdAt: new Date().toISOString()
+  };
+  db.users.push(user);
+  writeDb(db);
+  setSession(res, user.id);
+  return res.json({ ok: true, email: user.email });
+});
+
+app.post("/api/auth/login", (req, res) => {
+  const email = (req.body.email || "").toString().trim().toLowerCase();
+  const password = (req.body.password || "").toString();
+  const db = readDb();
+  const user = db.users.find((u) => u.email === email);
+  if (!user) return res.status(401).json({ error: "Неверный email или пароль" });
+  const hash = hashPassword(password, user.salt);
+  if (hash !== user.passwordHash) return res.status(401).json({ error: "Неверный email или пароль" });
+  setSession(res, user.id);
+  return res.json({ ok: true, email: user.email });
+});
+
+app.post("/api/auth/logout", (_req, res) => {
+  clearSession(res);
+  return res.json({ ok: true });
+});
+
+app.get("/api/me", authRequired, (req, res) => {
+  const db = readDb();
+  const user = db.users.find((u) => u.id === req.session.userId);
+  if (!user) return res.status(401).json({ error: "Unauthorized" });
+  return res.json({ id: user.id, email: user.email });
+});
+
+app.get("/api/my-widgets", authRequired, (req, res) => {
+  const db = readDb();
+  const widgets = db.widgets.filter((w) => w.userId === req.session.userId);
+  return res.json({ widgets });
+});
+
+app.post("/api/my-widgets", authRequired, (req, res) => {
+  const channel = (req.body.channel || "").toString().trim().replace(/^@/, "");
+  if (!channel) return res.status(400).json({ error: "Укажите канал" });
+  const db = readDb();
+  const widget = {
+    id: genId(),
+    userId: req.session.userId,
+    channel,
+    plan: "free",
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+  db.widgets.push(widget);
+  writeDb(db);
+  return res.json({ widget });
+});
+
+app.post("/api/my-widgets/:id/checkout", authRequired, (req, res) => {
+  const widgetId = req.params.id;
+  const tariff = (req.body.tariff || "monthly").toString().toLowerCase();
+  const amounts = {
+    monthly: 300,
+    yearly: 3000
+  };
+  const amountRub = amounts[tariff];
+  if (!amountRub) return res.status(400).json({ error: "Unknown tariff" });
+
+  const db = readDb();
+  const widget = db.widgets.find((w) => w.id === widgetId && w.userId === req.session.userId);
+  if (!widget) return res.status(404).json({ error: "Widget not found" });
+
+  // MVP placeholder before real payment provider integration:
+  // we mark payment intent and provide an internal confirmation endpoint.
+  const payment = {
+    id: genId(),
+    widgetId: widget.id,
+    userId: req.session.userId,
+    tariff,
+    amountRub,
+    status: "pending",
+    createdAt: new Date().toISOString()
+  };
+  db.payments.push(payment);
+  writeDb(db);
+  return res.json({
+    ok: true,
+    paymentId: payment.id,
+    tariff,
+    amountRub,
+    message: "Подключите ЮKassa и замените этот шаг на реальную оплату картой"
+  });
+});
+
+app.post("/api/my-widgets/:id/activate-paid", authRequired, (req, res) => {
+  const widgetId = req.params.id;
+  const tariff = (req.body.tariff || "monthly").toString().toLowerCase();
+  if (!["monthly", "yearly"].includes(tariff)) return res.status(400).json({ error: "Unknown tariff" });
+  const db = readDb();
+  const widget = db.widgets.find((w) => w.id === widgetId && w.userId === req.session.userId);
+  if (!widget) return res.status(404).json({ error: "Widget not found" });
+  widget.plan = "paid";
+  widget.billingCycle = tariff;
+  widget.updatedAt = new Date().toISOString();
+  writeDb(db);
+  return res.json({ ok: true, widget });
+});
+
+app.get("/embed/:widgetId", (req, res) => {
+  const widgetId = req.params.widgetId;
+  const db = readDb();
+  const widget = db.widgets.find((w) => w.id === widgetId);
+  if (!widget) return res.status(404).send("Widget not found");
+  const siteUrl = "https://liveproof.online";
+  const siteName = "LiveProof";
+  const src = widget.plan === "paid"
+    ? `/?channel=${encodeURIComponent(widget.channel)}&plan=paid`
+    : `/?channel=${encodeURIComponent(widget.channel)}&plan=free&siteName=${encodeURIComponent(siteName)}&siteUrl=${encodeURIComponent(siteUrl)}`;
+  return res.send(`<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>html,body{margin:0;padding:0;background:transparent;}</style>
+  </head>
+  <body>
+    <iframe src="${src}" width="100%" height="760" style="border:0;display:block" loading="lazy"></iframe>
+  </body>
+</html>`);
 });
 
 function normalizeNumber(value) {
