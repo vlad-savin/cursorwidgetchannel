@@ -11,11 +11,13 @@ const poweredEl = document.getElementById("widget-powered");
 function getConfigFromUrl() {
   const params = new URLSearchParams(window.location.search);
   const channel = (params.get("channel") || DEFAULT_CHANNEL).replace("@", "").trim();
-  const planRaw = (params.get("plan") || "paid").toLowerCase();
+  const planRaw = (params.get("plan") || "free").toLowerCase();
   const plan = planRaw === "paid" ? "paid" : "free";
   const siteUrl = (params.get("siteUrl") || DEFAULT_SITE_URL).trim();
   const siteName = (params.get("siteName") || DEFAULT_SITE_NAME).trim();
-  return { channel, plan, siteUrl, siteName };
+  const mode = (params.get("mode") || "").toLowerCase();
+  const fullMode = mode === "full";
+  return { channel, plan, siteUrl, siteName, fullMode };
 }
 
 function formatNumber(value) {
@@ -90,7 +92,7 @@ function renderText(text, textHtml) {
   return `<div class="post__text">${safeText}</div>`;
 }
 
-function renderPosts(posts) {
+function renderPosts(posts, config) {
   if (!posts.length) {
     postsContainer.innerHTML = '<div class="error">Посты не найдены.</div>';
     return;
@@ -134,6 +136,11 @@ function renderPosts(posts) {
 
   // Telegram-like behavior: newest post is at the bottom.
   const scrollToLatest = () => {
+    if (config.fullMode) {
+      postsContainer.classList.remove("widget__posts--bottom");
+      postsContainer.scrollTop = 0;
+      return;
+    }
     const hasOverflow = postsContainer.scrollHeight > postsContainer.clientHeight + 1;
     postsContainer.classList.toggle("widget__posts--bottom", !hasOverflow);
     postsContainer.scrollTop = postsContainer.scrollHeight;
@@ -141,6 +148,8 @@ function renderPosts(posts) {
 
   requestAnimationFrame(scrollToLatest);
   setTimeout(scrollToLatest, 300);
+  setTimeout(notifyParentHeight, 350);
+  setTimeout(notifyParentHeight, 1000);
 }
 
 function renderPowered(config) {
@@ -151,12 +160,23 @@ function renderPowered(config) {
 
   const safeSiteUrl = escapeHtml(config.siteUrl);
   const safeSiteName = escapeHtml(config.siteName);
-  poweredEl.innerHTML = `Виджет от <a href="${safeSiteUrl}" target="_blank" rel="noreferrer">${safeSiteName}</a>`;
+  poweredEl.innerHTML = `Куплено вот тут: <a href="${safeSiteUrl}" target="_blank" rel="noreferrer">${safeSiteName}</a>`;
   poweredEl.hidden = false;
+}
+
+function notifyParentHeight() {
+  const height = Math.max(
+    document.body ? document.body.scrollHeight : 0,
+    document.documentElement ? document.documentElement.scrollHeight : 0
+  );
+  if (height > 0 && window.parent && window.parent !== window) {
+    window.parent.postMessage({ type: "liveproof-widget-height", height }, "*");
+  }
 }
 
 async function init() {
   const config = getConfigFromUrl();
+  document.body.classList.toggle("widget--full", config.fullMode);
 
   try {
     const response = await fetch(`/api/channel/${config.channel}`);
@@ -167,12 +187,17 @@ async function init() {
     subsEl.textContent = `Подписчики: ${formatNumber(data.subscribers)}`;
     linkEl.href = data.channelUrl;
 
-    renderPosts(data.posts || []);
+    renderPosts(data.posts || [], config);
     renderPowered(config);
+    setTimeout(notifyParentHeight, 150);
 
   } catch (error) {
     postsContainer.innerHTML = '<div class="error">Ошибка загрузки данных канала.</div>';
+    setTimeout(notifyParentHeight, 100);
   }
 }
+
+window.addEventListener("load", notifyParentHeight);
+window.addEventListener("resize", notifyParentHeight);
 
 init();

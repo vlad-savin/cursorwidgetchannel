@@ -106,6 +106,16 @@ body {
   justify-content: flex-end;
 }
 
+.widget--full .widget__posts {
+  height: auto;
+  overflow: visible;
+  scroll-snap-type: none;
+}
+
+.widget--full .post {
+  scroll-snap-align: none;
+}
+
 .post {
   border: 1px solid #e5e7eb;
   border-radius: 14px;

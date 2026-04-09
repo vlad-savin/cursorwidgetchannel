@@ -37,8 +37,9 @@
             id="demo-frame"
             src="/?channel=r77_ai&plan=free&siteName=LiveProof&siteUrl=https://liveproof.online"
             width="100%"
-            height="760"
+            height="560"
             style="border: 0; display: block"
+            scrolling="no"
             loading="lazy"
           ></iframe>
         </div>
@@ -106,7 +107,10 @@
           event.preventDefault();
           const raw = (input.value || "").trim().replace(/^@/, "");
           const channel = raw || "r77_ai";
-          frame.src = "/?channel=" + encodeURIComponent(channel) + "&plan=free&siteName=LiveProof&siteUrl=https://liveproof.online";
+          frame.src =
+            "/?channel=" +
+            encodeURIComponent(channel) +
+            "&plan=free&siteName=LiveProof&siteUrl=https://liveproof.online";
         });
       })();
     </script>
