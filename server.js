@@ -2,12 +2,35 @@ const express = require("express");
 const cors = require("cors");
 const axios = require("axios");
 const cheerio = require("cheerio");
+const path = require("path");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.static("public"));
+
+const publicDir = path.join(__dirname, "public");
+
+app.get("/site", (_req, res) => {
+  res.sendFile(path.join(publicDir, "site.html"));
+});
+
+app.get("/pricing", (_req, res) => {
+  res.sendFile(path.join(publicDir, "pricing.html"));
+});
+
+app.get("/requisites", (_req, res) => {
+  res.sendFile(path.join(publicDir, "requisites.html"));
+});
+
+app.get("/offer", (_req, res) => {
+  res.sendFile(path.join(publicDir, "offer.html"));
+});
+
+app.get("/privacy", (_req, res) => {
+  res.sendFile(path.join(publicDir, "privacy.html"));
+});
 
 function normalizeNumber(value) {
   if (!value) return 0;

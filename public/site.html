@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LiveProof - виджет живого Telegram-канала</title>
+    <link rel="stylesheet" href="/site.css" />
+  </head>
+  <body>
+    <div class="wrap">
+      <nav class="nav">
+        <a href="/site">Главная</a>
+        <a href="/pricing">Тарифы</a>
+      </nav>
+
+      <section class="hero">
+        <h1>LiveProof</h1>
+        <p>
+          Виджет Telegram-канала для сайта. Показывайте живые посты компании и усиливайте доверие клиентов:
+          обновления, кейсы, активность команды.
+        </p>
+        <div class="actions">
+          <a class="btn btn--primary" href="#tariffs">Посмотреть тарифы</a>
+          <a class="btn btn--ghost" href="#demo">Проверить свой канал</a>
+        </div>
+      </section>
+
+      <section class="card" id="demo">
+        <h2>Демо вашего канала</h2>
+        <p class="muted">Введите username канала (например, <code>r77_ai</code>) и посмотрите, как виджет выглядит на сайте.</p>
+        <form class="demo-form" id="demo-form">
+          <input class="demo-input" id="demo-channel" type="text" value="r77_ai" placeholder="username канала" />
+          <button class="btn btn--primary" type="submit">Показать демо</button>
+        </form>
+        <div class="demo-frame-wrap">
+          <iframe
+            id="demo-frame"
+            src="/?channel=r77_ai&plan=free&siteName=LiveProof&siteUrl=https://liveproof.online"
+            width="100%"
+            height="760"
+            style="border: 0; display: block"
+            loading="lazy"
+          ></iframe>
+        </div>
+      </section>
+
+      <section class="grid grid--2" id="tariffs">
+        <article class="card">
+          <h2>Free</h2>
+          <p class="price">0 ₽</p>
+          <ul>
+            <li>Базовый виджет до 5 постов</li>
+            <li>Пометка "Куплено вот тут"</li>
+            <li>Быстрый запуск через iframe</li>
+          </ul>
+        </article>
+        <article class="card">
+          <h2>Paid</h2>
+          <p class="price">990 ₽ / месяц</p>
+          <ul>
+            <li>Без пометки</li>
+            <li>Чистый виджет для коммерческого сайта</li>
+            <li>Приоритетная поддержка</li>
+          </ul>
+          <p><a class="btn btn--primary" href="mailto:support@liveproof.online?subject=Оплата%20тарифа%20Paid">Оплатить картой</a></p>
+        </article>
+      </section>
+
+      <section class="grid grid--2">
+        <article class="card">
+          <h2>Что вы получаете</h2>
+          <ul>
+            <li>Вставку виджета через iframe за 1 минуту</li>
+            <li>Показ последних постов Telegram прямо на сайте</li>
+            <li>Free и Paid версии</li>
+            <li>Настройку под Tilda и другие CMS</li>
+          </ul>
+        </article>
+        <article class="card">
+          <h2>Для кого сервис</h2>
+          <ul>
+            <li>B2B и агентства</li>
+            <li>Эксперты и продуктовые команды</li>
+            <li>Стартапы и онлайн-школы</li>
+            <li>Любой бизнес, кому важна "живость" компании</li>
+          </ul>
+        </article>
+      </section>
+
+      <footer class="footer">
+        <p>© LiveProof. Контакты: support@liveproof.online</p>
+        <p>
+          <a href="/requisites">Реквизиты</a>
+          <a href="/offer">Оферта</a>
+          <a href="/privacy">Политика конфиденциальности</a>
+        </p>
+      </footer>
+    </div>
+    <script>
+      (function () {
+        const form = document.getElementById("demo-form");
+        const input = document.getElementById("demo-channel");
+        const frame = document.getElementById("demo-frame");
+
+        form.addEventListener("submit", function (event) {
+          event.preventDefault();
+          const raw = (input.value || "").trim().replace(/^@/, "");
+          const channel = raw || "r77_ai";
+          frame.src = "/?channel=" + encodeURIComponent(channel) + "&plan=free&siteName=LiveProof&siteUrl=https://liveproof.online";
+        });
+      })();
+    </script>
+  </body>
+</html>
