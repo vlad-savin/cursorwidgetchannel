@@ -11,6 +11,9 @@ const PORT = process.env.PORT || 3000;
 const SESSION_COOKIE = "lp_session";
 const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 7;
 const SESSION_SECRET = process.env.SESSION_SECRET || "dev-liveproof-secret";
+const YOOKASSA_SHOP_ID = process.env.YOOKASSA_SHOP_ID || "";
+const YOOKASSA_SECRET_KEY = process.env.YOOKASSA_SECRET_KEY || "";
+const YOOKASSA_RETURN_URL = process.env.YOOKASSA_RETURN_URL || "";
 
 const publicDir = path.join(__dirname, "public");
 const dataDir = path.join(__dirname, "data");
@@ -40,6 +43,53 @@ function writeDb(data) {
 
 function genId() {
   return crypto.randomBytes(8).toString("hex");
+}
+
+function generateYearlyActiveUntil() {
+  const d = new Date();
+  d.setFullYear(d.getFullYear() + 1);
+  return d.toISOString();
+}
+
+function generateMonthlyActiveUntil() {
+  const d = new Date();
+  d.setMonth(d.getMonth() + 1);
+  return d.toISOString();
+}
+
+async function createYooKassaPayment({ amountRub, description, metadata }) {
+  if (!YOOKASSA_SHOP_ID || !YOOKASSA_SECRET_KEY || !YOOKASSA_RETURN_URL) {
+    throw new Error("YOOKASSA_NOT_CONFIGURED");
+  }
+
+  const auth = Buffer.from(`${YOOKASSA_SHOP_ID}:${YOOKASSA_SECRET_KEY}`).toString("base64");
+  const idempotenceKey =
+    typeof crypto.randomUUID === "function" ? crypto.randomUUID() : `${Date.now()}-${genId()}`;
+  const { data } = await axios.post(
+    "https://api.yookassa.ru/v3/payments",
+    {
+      amount: {
+        value: `${Number(amountRub).toFixed(2)}`,
+        currency: "RUB"
+      },
+      capture: true,
+      confirmation: {
+        type: "redirect",
+        return_url: YOOKASSA_RETURN_URL
+      },
+      description,
+      metadata
+    },
+    {
+      headers: {
+        Authorization: `Basic ${auth}`,
+        "Idempotence-Key": idempotenceKey,
+        "Content-Type": "application/json"
+      },
+      timeout: 15000
+    }
+  );
+  return data;
 }
 
 function signValue(value) {
@@ -212,7 +262,7 @@ app.post("/api/my-widgets", authRequired, (req, res) => {
   return res.json({ widget });
 });
 
-app.post("/api/my-widgets/:id/checkout", authRequired, (req, res) => {
+app.post("/api/my-widgets/:id/checkout", authRequired, async (req, res) => {
   const widgetId = req.params.id;
   const tariff = (req.body.tariff || "monthly").toString().toLowerCase();
   const amounts = {
@@ -226,8 +276,6 @@ app.post("/api/my-widgets/:id/checkout", authRequired, (req, res) => {
   const widget = db.widgets.find((w) => w.id === widgetId && w.userId === req.session.userId);
   if (!widget) return res.status(404).json({ error: "Widget not found" });
 
-  // MVP placeholder before real payment provider integration:
-  // we mark payment intent and provide an internal confirmation endpoint.
   const payment = {
     id: genId(),
     widgetId: widget.id,
@@ -235,17 +283,43 @@ app.post("/api/my-widgets/:id/checkout", authRequired, (req, res) => {
     tariff,
     amountRub,
     status: "pending",
+    provider: "yookassa",
+    providerPaymentId: null,
+    confirmationUrl: null,
     createdAt: new Date().toISOString()
   };
-  db.payments.push(payment);
-  writeDb(db);
-  return res.json({
-    ok: true,
-    paymentId: payment.id,
-    tariff,
-    amountRub,
-    message: "Подключите ЮKassa и замените этот шаг на реальную оплату картой"
-  });
+
+  try {
+    const yooPayment = await createYooKassaPayment({
+      amountRub,
+      description: `LiveProof ${tariff === "yearly" ? "годовой" : "месячный"} тариф`,
+      metadata: {
+        paymentId: payment.id,
+        widgetId: widget.id,
+        userId: req.session.userId,
+        tariff
+      }
+    });
+
+    payment.providerPaymentId = yooPayment.id;
+    payment.confirmationUrl = yooPayment.confirmation ? yooPayment.confirmation.confirmation_url : null;
+    db.payments.push(payment);
+    writeDb(db);
+
+    return res.json({
+      ok: true,
+      paymentId: payment.id,
+      tariff,
+      amountRub,
+      checkoutUrl: payment.confirmationUrl
+    });
+  } catch (error) {
+    const detail =
+      error.message === "YOOKASSA_NOT_CONFIGURED"
+        ? "ЮKassa не настроена. Заполните YOOKASSA_SHOP_ID, YOOKASSA_SECRET_KEY и YOOKASSA_RETURN_URL."
+        : "Не удалось создать платеж в ЮKassa";
+    return res.status(500).json({ error: detail });
+  }
 });
 
 app.post("/api/my-widgets/:id/activate-paid", authRequired, (req, res) => {
@@ -260,6 +334,33 @@ app.post("/api/my-widgets/:id/activate-paid", authRequired, (req, res) => {
   widget.updatedAt = new Date().toISOString();
   writeDb(db);
   return res.json({ ok: true, widget });
+});
+
+app.post("/api/payments/webhook", (req, res) => {
+  const event = req.body || {};
+  if (event.event !== "payment.succeeded" || !event.object || !event.object.id) {
+    return res.status(200).json({ ok: true, ignored: true });
+  }
+
+  const providerPaymentId = event.object.id;
+  const db = readDb();
+  const payment = db.payments.find((p) => p.providerPaymentId === providerPaymentId);
+  if (!payment) return res.status(200).json({ ok: true, ignored: true });
+  if (payment.status === "succeeded") return res.status(200).json({ ok: true, alreadyProcessed: true });
+
+  payment.status = "succeeded";
+  payment.succeededAt = new Date().toISOString();
+
+  const widget = db.widgets.find((w) => w.id === payment.widgetId);
+  if (widget) {
+    widget.plan = "paid";
+    widget.billingCycle = payment.tariff;
+    widget.activeUntil = payment.tariff === "yearly" ? generateYearlyActiveUntil() : generateMonthlyActiveUntil();
+    widget.updatedAt = new Date().toISOString();
+  }
+
+  writeDb(db);
+  return res.status(200).json({ ok: true });
 });
 
 app.get("/embed/:widgetId", (req, res) => {

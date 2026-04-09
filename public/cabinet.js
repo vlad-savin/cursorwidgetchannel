@@ -56,6 +56,13 @@ async function loadCabinet() {
             : "Paid помесячный (без пометки)";
         const status = widget.plan === "paid" ? paidLabel : "Free (с пометкой)";
         const code = widgetCode(widget, host);
+        const payActions =
+          widget.plan === "paid"
+            ? '<p class="muted">Тариф активен до: ' + escapeHtml(widget.activeUntil || "не указано") + "</p>"
+            : `<div class="actions">
+                <button class="btn btn--primary" data-pay-monthly="${widget.id}">Оплатить 300 ₽/мес</button>
+                <button class="btn btn--primary" data-pay-yearly="${widget.id}">Оплатить 3000 ₽/год</button>
+              </div>`;
         return `<article class="card" style="margin-top:10px">
           <h3>@${escapeHtml(widget.channel)}</h3>
           <p class="muted">Статус: <strong>${status}</strong></p>
@@ -63,9 +70,8 @@ async function loadCabinet() {
           <textarea class="code-output" readonly>${escapeHtml(code)}</textarea>
           <div class="actions">
             <button class="btn btn--ghost" data-copy="${widget.id}">Скопировать код</button>
-            <button class="btn btn--primary" data-pay-monthly="${widget.id}">Оплатить 300 ₽/мес (MVP)</button>
-            <button class="btn btn--primary" data-pay-yearly="${widget.id}">Оплатить 3000 ₽/год (MVP)</button>
           </div>
+          ${payActions}
         </article>`;
       })
       .join("");
@@ -85,22 +91,19 @@ async function loadCabinet() {
     async function payFor(widgetId, tariff, button) {
       button.disabled = true;
       try {
-        await api(`/api/my-widgets/${widgetId}/checkout`, {
+        const checkout = await api(`/api/my-widgets/${widgetId}/checkout`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ tariff })
         });
-        await api(`/api/my-widgets/${widgetId}/activate-paid`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ tariff })
-        });
-        await renderWidgets();
+        if (!checkout.checkoutUrl) {
+          throw new Error("Не удалось получить ссылку оплаты");
+        }
+        window.location.href = checkout.checkoutUrl;
       } catch (error) {
         alert(error.message);
       } finally {
-        button.disabled = true;
-        setTimeout(() => (button.disabled = false), 400);
+        button.disabled = false;
       }
     }
 
