@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Вход - LiveProof</title>
+    <link rel="stylesheet" href="/site.css" />
+  </head>
+  <body>
+    <div class="wrap">
+      <nav class="nav">
+        <a href="/site">Главная</a>
+        <a href="/pricing">Тарифы</a>
+        <a href="/auth">Вход</a>
+      </nav>
+
+      <section class="grid grid--2">
+        <article class="card">
+          <h2>Регистрация</h2>
+          <form id="register-form" class="demo-form">
+            <input class="demo-input" name="email" type="email" placeholder="Email" required />
+            <input class="demo-input" name="password" type="password" placeholder="Пароль (6+ символов)" required />
+            <button class="btn btn--primary" type="submit">Создать аккаунт</button>
+          </form>
+          <p id="register-msg" class="muted"></p>
+        </article>
+
+        <article class="card">
+          <h2>Вход</h2>
+          <form id="login-form" class="demo-form">
+            <input class="demo-input" name="email" type="email" placeholder="Email" required />
+            <input class="demo-input" name="password" type="password" placeholder="Пароль" required />
+            <button class="btn btn--primary" type="submit">Войти</button>
+          </form>
+          <p id="login-msg" class="muted"></p>
+        </article>
+      </section>
+    </div>
+
+    <script>
+      async function submitForm(formId, path, msgId) {
+        const form = document.getElementById(formId);
+        const msg = document.getElementById(msgId);
+        form.addEventListener("submit", async (e) => {
+          e.preventDefault();
+          msg.textContent = "Проверка...";
+          const payload = Object.fromEntries(new FormData(form).entries());
+          const res = await fetch(path, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+          });
+          const json = await res.json().catch(() => ({}));
+          if (!res.ok) {
+            msg.textContent = json.error || "Ошибка";
+            return;
+          }
+          msg.textContent = "Готово, переходим в кабинет...";
+          setTimeout(() => (window.location.href = "/cabinet"), 400);
+        });
+      }
+
+      submitForm("register-form", "/api/auth/register", "register-msg");
+      submitForm("login-form", "/api/auth/login", "login-msg");
+    </script>
+  </body>
+</html>

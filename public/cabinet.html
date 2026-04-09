@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Кабинет - LiveProof</title>
+    <link rel="stylesheet" href="/site.css" />
+  </head>
+  <body>
+    <div class="wrap">
+      <nav class="nav">
+        <a href="/site">Главная</a>
+        <a href="/pricing">Тарифы</a>
+        <a href="/auth">Вход</a>
+      </nav>
+
+      <section class="card">
+        <h1>Личный кабинет</h1>
+        <p id="me-email" class="muted">Загрузка...</p>
+        <button id="logout-btn" class="btn btn--ghost" type="button">Выйти</button>
+      </section>
+
+      <section class="card">
+        <h2>Создать виджет</h2>
+        <form id="create-widget-form" class="demo-form">
+          <input class="demo-input" name="channel" placeholder="username канала, например r77_ai" required />
+          <button class="btn btn--primary" type="submit">Создать</button>
+        </form>
+        <p id="create-msg" class="muted"></p>
+      </section>
+
+      <section class="card">
+        <h2>Мои виджеты</h2>
+        <div id="widgets-list"></div>
+      </section>
+    </div>
+    <script src="/cabinet.js"></script>
+  </body>
+</html>
