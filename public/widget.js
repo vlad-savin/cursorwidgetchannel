@@ -47,7 +47,7 @@ function escapeHtml(value) {
 function renderMedia(media, postText) {
   if (!media || !media.url) return "";
 
-  const safeUrl = escapeHtml(media.url);
+  const safeUrl = escapeHtml(`/api/media?url=${encodeURIComponent(media.url)}`);
   const alt = escapeHtml(postText || "Post media");
   const isVideo = media.type === "video";
 

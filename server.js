@@ -434,6 +434,50 @@ function extractUrlFromStyle(styleValue) {
   return match ? match[1] : null;
 }
 
+function decodeHtmlEntities(value) {
+  if (!value) return "";
+  return value
+    .replace(/&amp;/gi, "&")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">");
+}
+
+function normalizeMediaUrl(rawUrl) {
+  if (!rawUrl) return null;
+  const decoded = decodeHtmlEntities(rawUrl).trim().replace(/^['"]|['"]$/g, "");
+  if (!decoded) return null;
+
+  const withProtocol = decoded.startsWith("//") ? `https:${decoded}` : decoded;
+
+  try {
+    const parsed = new URL(withProtocol, "https://t.me");
+    if (!["http:", "https:"].includes(parsed.protocol)) return null;
+    return parsed.toString();
+  } catch {
+    return null;
+  }
+}
+
+function isAllowedMediaUrl(rawUrl) {
+  const normalized = normalizeMediaUrl(rawUrl);
+  if (!normalized) return false;
+  try {
+    const { hostname } = new URL(normalized);
+    const allowedSuffixes = [
+      "telegram.org",
+      "telegram-cdn.org",
+      "cdn-telegram.org",
+      "t.me",
+      "telegra.ph"
+    ];
+    return allowedSuffixes.some((suffix) => hostname === suffix || hostname.endsWith(`.${suffix}`));
+  } catch {
+    return false;
+  }
+}
+
 function getFirstNonEmpty($root, selectors) {
   for (const selector of selectors) {
     const value = $root.find(selector).first().text().trim();
@@ -447,17 +491,17 @@ function parseMedia($post) {
   const videoStyle = $post.find(".tgme_widget_message_video_thumb").attr("style");
   const linkPreviewStyle = $post.find(".link_preview_image").attr("style");
 
-  const photoUrl = extractUrlFromStyle(photoStyle);
+  const photoUrl = normalizeMediaUrl(extractUrlFromStyle(photoStyle));
   if (photoUrl) {
     return { type: "photo", url: photoUrl };
   }
 
-  const videoPreviewUrl = extractUrlFromStyle(videoStyle);
+  const videoPreviewUrl = normalizeMediaUrl(extractUrlFromStyle(videoStyle));
   if (videoPreviewUrl) {
     return { type: "video", url: videoPreviewUrl };
   }
 
-  const previewUrl = extractUrlFromStyle(linkPreviewStyle);
+  const previewUrl = normalizeMediaUrl(extractUrlFromStyle(linkPreviewStyle));
   if (previewUrl) {
     return { type: "preview", url: previewUrl };
   }
@@ -625,6 +669,80 @@ app.get("/api/channel/:channel", async (req, res) => {
       error: "Не удалось получить данные канала",
       details: error.message
     });
+  }
+});
+
+app.get("/api/media", async (req, res) => {
+  try {
+    const rawUrl = (req.query.url || "").toString().trim();
+    if (!rawUrl) {
+      return res.status(400).json({ error: "url is required" });
+    }
+
+    let parsed;
+    try {
+      parsed = new URL(rawUrl);
+    } catch {
+      return res.status(400).json({ error: "invalid url" });
+    }
+
+    if (!["http:", "https:"].includes(parsed.protocol)) {
+      return res.status(400).json({ error: "unsupported protocol" });
+    }
+
+    const mediaResponse = await axios.get(parsed.toString(), {
+      responseType: "arraybuffer",
+      timeout: 15000,
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0 Safari/537.36",
+        Referer: "https://t.me/"
+      },
+      maxContentLength: 10 * 1024 * 1024
+    });
+
+    const contentType = mediaResponse.headers["content-type"] || "application/octet-stream";
+    res.setHeader("Content-Type", contentType);
+    res.setHeader("Cache-Control", "public, max-age=3600");
+    return res.send(Buffer.from(mediaResponse.data));
+  } catch (error) {
+    return res.status(502).json({
+      error: "Не удалось загрузить медиа",
+      details: error.message
+    });
+  }
+});
+
+app.get("/api/media", async (req, res) => {
+  try {
+    const rawUrl = (req.query.url || "").toString();
+    if (!rawUrl) return res.status(400).json({ error: "Missing media url" });
+    if (!isAllowedMediaUrl(rawUrl)) return res.status(400).json({ error: "Media host is not allowed" });
+
+    const mediaUrl = normalizeMediaUrl(rawUrl);
+    const upstream = await axios.get(mediaUrl, {
+      responseType: "arraybuffer",
+      timeout: 15000,
+      maxRedirects: 5,
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0 Safari/537.36",
+        Referer: "https://t.me/",
+        Accept: "image/avif,image/webp,image/apng,image/*,*/*;q=0.8"
+      }
+    });
+
+    const contentType = (upstream.headers["content-type"] || "").toString().toLowerCase();
+    if (!contentType.startsWith("image/")) {
+      return res.status(415).json({ error: "Upstream did not return an image" });
+    }
+
+    res.setHeader("Content-Type", contentType);
+    res.setHeader("Cache-Control", "public, max-age=900");
+    return res.status(200).send(Buffer.from(upstream.data));
+  } catch (error) {
+    const status = error.response && error.response.status ? error.response.status : 502;
+    return res.status(status).json({ error: "Не удалось загрузить медиа", details: error.message });
   }
 });
 
